@@ -1,0 +1,20 @@
+Admin Credentials
+These are used to log in to admin.html for managing dealerships.
+
+Username	Password
+admin1	adminpass1
+admin2	adminpass2
+Dealership Credentials
+These are used to log in to dealership.html for managing notifications and adding car models. Below are the 10 sample dealerships from script.js (the full 60 follow the same structure).
+
+Dealership ID	Password	Name	Make	City
+Maruti-D1	maruti123	Maruti Kothrud	Maruti Suzuki	Pune
+Hyundai-D1	hyundai123	Hyundai Pimpri	Hyundai	Pune
+Tata-D1	tata123	Tata Wakad	Tata	Pune
+Mahindra-D1	mahindra123	Mahindra Baner	Mahindra	Pune
+Honda-D1	honda123	Honda Viman Nagar	Honda	Pune
+Maruti-D2	maruti123	Maruti Andheri	Maruti Suzuki	Mumbai
+Hyundai-D2	hyundai123	Hyundai Thane	Hyundai	Mumbai
+Tata-D2	tata123	Tata Borivali	Tata	Mumbai
+Toyota-D1	toyota123	Toyota Malad	Toyota	Mumbai
+Kia-D1	kia123	Kia Navi Mumbai	Kia	Mumbai

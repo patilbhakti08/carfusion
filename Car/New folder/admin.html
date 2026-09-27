@@ -1,0 +1,94 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarFusion - Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="CarFusion Logo" style="height: 40px;"></a>
+        </div>
+        <div class="user-info">
+            <button id="logout-btn" class="btn btn-danger hidden" onclick="logoutAdmin()">Logout</button>
+        </div>
+    </header>
+    <main class="container">
+        <h2>Admin Login</h2>
+        <form onsubmit="loginAdmin(event)">
+            <label for="admin-username">Username:</label>
+            <input type="text" id="admin-username" required aria-label="Username">
+            <label for="admin-password">Password:</label>
+            <input type="password" id="admin-password" required aria-label="Password">
+            <div id="admin-error" class="error"></div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        <div id="admin-dashboard" class="hidden">
+            <h2>Manage Dealerships</h2>
+            <h3>Add Dealership</h3>
+            <form onsubmit="addDealership(event)">
+                <label for="dealer-id">Dealership ID:</label>
+                <input type="text" id="dealer-id" required aria-label="Dealership ID">
+                <label for="dealer-name">Name:</label>
+                <input type="text" id="dealer-name" required aria-label="Dealership Name">
+                <label for="dealer-make">Make:</label>
+                <input type="text" id="dealer-make" required aria-label="Car Make">
+                <label for="dealer-city">City:</label>
+                <input type="text" id="dealer-city" required aria-label="City">
+                <label for="dealer-password">Password:</label>
+                <input type="password" id="dealer-password" required aria-label="Password">
+                <div id="dealer-add-error" class="error"></div>
+                <button type="submit" class="btn">Add Dealership</button>
+            </form>
+            <h3>View Applications</h3>
+            <button class="btn" onclick="viewApplications()">Show Applications</button>
+            <div id="applications"></div>
+        </div>
+    </main>
+    <footer class="footer">
+        <p>© 2025 CarFusion. All rights reserved.</p>
+    </footer>
+</body>
+</html>

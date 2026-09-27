@@ -1,0 +1,297 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarFusion - Car Details</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="globals.js"></script>
+    <script defer src="utils.js"></script>
+    <script defer src="auth.js"></script>
+    <script defer src="cars.js"></script>
+    <script defer src="testDrive.js"></script>
+    <script defer src="comparison.js"></script>
+    <script defer src="admin.js"></script>
+    <script defer src="jobApplications.js"></script>
+    <script defer src="contact.js"></script>
+    <script defer src="dealership.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="CarFusion Logo" style="height: 45px;"></a>
+        </div>
+        <div class="user-info">
+            <span id="username" class="username hidden"></span>
+            <button id="login-btn" class="btn"><img src="https://via.placeholder.com/20?text=Login" alt="Login Icon"> Login</button>
+            <button id="logout-btn" class="btn hidden" onclick="logoutUser()"><img src="https://via.placeholder.com/20?text=Logout" alt="Logout Icon"> Logout</button>
+        </div>
+    </header>
+    <main class="container">
+        <div class="car-details-page">
+            <h1 id="car-title">Car Details</h1>
+            <img id="car-image" src="https://via.placeholder.com/400?text=Car" alt="Car Image">
+            <table class="comparison-table">
+                <tr><th>Parameter</th><th>Value</th></tr>
+                <tr><td>Make</td><td id="car-make"></td></tr>
+                <tr><td>Model</td><td id="car-model"></td></tr>
+                <tr><td>Year</td><td id="car-year"></td></tr>
+                <tr><td>Ex-Showroom Price</td><td id="car-ex-showroom"></td></tr>
+                <tr><td>RTO</td><td id="car-rto"></td></tr>
+                <tr><td>Insurance</td><td id="car-insurance"></td></tr>
+                <tr><td>Others</td><td id="car-others"></td></tr>
+                <tr><td>On-Road Price</td><td id="car-on-road"></td></tr>
+                <tr><td>Mileage</td><td id="car-mileage"></td></tr>
+                <tr><td>Engine</td><td id="car-engine"></td></tr>
+                <tr><td>Fuel Type</td><td id="car-fuelType"></td></tr>
+                <tr><td>Transmission</td><td id="car-transmission"></td></tr>
+                <tr><td>Seating</td><td id="car-seating"></td></tr>
+                <tr><td>Body Type</td><td id="car-bodyType"></td></tr>
+                <tr><td>Power</td><td id="car-power"></td></tr>
+                <tr><td>Torque</td><td id="car-torque"></td></tr>
+                <tr><td>Safety Features</td><td id="car-safetyFeatures"></td></tr>
+                <tr><td>Infotainment</td><td id="car-infotainment"></td></tr>
+                <tr><td>Ground Clearance</td><td id="car-groundClearance"></td></tr>
+            </table>
+            <div class="emi-calculator">
+                <h2>EMI Calculator</h2>
+                <div class="test-drive-form">
+                    <div class="form-group">
+                        <label for="downpayment">Downpayment (₹):</label>
+                        <input type="number" id="downpayment" min="0" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="interest-rate">Interest Rate (%):</label>
+                        <input type="number" id="interest-rate" min="5" max="20" step="0.1" value="8" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tenure">Loan Tenure (Months):</label>
+                        <input type="number" id="tenure" min="12" max="84" value="60" required>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="calculateCarEMI()">Calculate EMI</button>
+                    </div>
+                </div>
+                <div id="emi-result" class="hidden">
+                    <h3>EMI Details</h3>
+                    <p>Monthly EMI: <span id="emi-amount"></span></p>
+                    <p>Total Payment: <span id="total-payment"></span></p>
+                </div>
+            </div>
+            <div class="compare-button-container">
+                <button class="btn btn-primary" onclick="addToCompare(getCarId())">Add to Compare</button>
+                <button class="btn btn-warning" onclick="openTestDriveForm(getCarId())">Book Test Drive</button>
+            </div>
+        </div>
+    </main>
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="index.html">Home</a>
+                <a href="contact.html">Contact</a>
+                <a href="careers.html">Careers</a>
+                <a href="about.html">About</a>
+                <a href="policy.html">Policy</a>
+            </div>
+            <div class="footer-section">
+                <h3>Contact Us</h3>
+                <p>Email: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d4e484d4d524f497d5e5c4f5b484e545253135e5250">[email protected]</a></p>
+                <p>Phone: +91 123 456 7890</p>
+                <p>Address: 123 Car Street, Pune, India</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-icons">
+                    <a href="#"><img src="https://via.placeholder.com/32?text=FB" alt="Facebook"></a>
+                    <a href="#"><img src="https://via.placeholder.com/32?text=IG" alt="Instagram"></a>
+                    <a href="#"><img src="https://via.placeholder.com/32?text=TW" alt="Twitter"></a>
+                </div>
+                <div class="login-links">
+                    <a href="dealership.html">Dealership Login</a>
+                    <a href="admin.html">Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <div id="modal" class="modal">
+        <div id="modal-content" class="modal-content"></div>
+    </div>
+    <div id="toast" class="toast"></div>
+<script>
+    function getCarId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return parseInt(urlParams.get("id"));
+    }
+
+    function displayCarDetails() {
+        try {
+            const carId = getCarId();
+            if (!carId) {
+                showAlert("No car ID provided.");
+                document.getElementById("car-title").textContent = "Car Not Found";
+                return;
+            }
+
+            const cars = JSON.parse(localStorage.getItem("cars") || "[]");
+            const car = cars.find(c => c.id === carId);
+            if (!car) {
+                showAlert("Car not found.");
+                document.getElementById("car-title").textContent = "Car Not Found";
+                return;
+            }
+
+            const priceDetails = calculateOnRoadPrice(car.price);
+
+            document.getElementById("car-title").textContent = `${car.make} ${car.model}`;
+            document.getElementById("car-image").src = car.image;
+            document.getElementById("car-make").textContent = car.make || "N/A";
+            document.getElementById("car-model").textContent = car.model || "N/A";
+            document.getElementById("car-year").textContent = car.year || "N/A";
+            document.getElementById("car-ex-showroom").textContent = car.price ? `₹${Number(car.price).toLocaleString('en-IN')}` : "N/A";
+            document.getElementById("car-rto").textContent = priceDetails.rto ? `₹${Number(priceDetails.rto).toLocaleString('en-IN')}` : "N/A";
+            document.getElementById("car-insurance").textContent = priceDetails.insurance ? `₹${Number(priceDetails.insurance).toLocaleString('en-IN')}` : "N/A";
+            document.getElementById("car-others").textContent = priceDetails.others ? `₹${Number(priceDetails.others).toLocaleString('en-IN')}` : "N/A";
+            document.getElementById("car-on-road").textContent = priceDetails.onRoadPrice ? `₹${Number(priceDetails.onRoadPrice).toLocaleString('en-IN')}` : "N/A";
+            document.getElementById("car-mileage").textContent = car.mileage || "N/A";
+            document.getElementById("car-engine").textContent = car.engine || "N/A";
+            document.getElementById("car-fuelType").textContent = car.fuelType || "N/A";
+            document.getElementById("car-transmission").textContent = car.transmission || "N/A";
+            document.getElementById("car-seating").textContent = car.seating || "N/A";
+            document.getElementById("car-bodyType").textContent = car.bodyType || "N/A";
+            document.getElementById("car-power").textContent = car.power || "N/A";
+            document.getElementById("car-torque").textContent = car.torque || "N/A";
+            document.getElementById("car-safetyFeatures").textContent = car.safetyFeatures || "N/A";
+            document.getElementById("car-infotainment").textContent = car.infotainment || "N/A";
+            document.getElementById("car-groundClearance").textContent = car.groundClearance || "N/A";
+
+            // Set default downpayment to 20% of on-road price
+            const downpaymentInput = document.getElementById("downpayment");
+            if (priceDetails.onRoadPrice) {
+                downpaymentInput.value = Math.round(priceDetails.onRoadPrice * 0.2);
+            }
+        } catch (e) {
+            console.error("Display car details failed:", e);
+            showAlert("Failed to load car details.");
+            document.getElementById("car-title").textContent = "Error Loading Car";
+        }
+    }
+
+    function calculateCarEMI() {
+        try {
+            const carId = getCarId();
+            const cars = JSON.parse(localStorage.getItem("cars") || "[]");
+            const car = cars.find(c => c.id === carId);
+            if (!car) {
+                showAlert("Car not found.");
+                return;
+            }
+
+            const priceDetails = calculateOnRoadPrice(car.price);
+            if (!priceDetails.onRoadPrice) {
+                showAlert("Unable to calculate on-road price.");
+                return;
+            }
+
+            const downpayment = parseFloat(document.getElementById("downpayment").value);
+            const interestRate = parseFloat(document.getElementById("interest-rate").value) / 100 / 12;
+            const tenure = parseInt(document.getElementById("tenure").value);
+
+            // Validate inputs
+            if (isNaN(downpayment) || downpayment < 0 || downpayment >= priceDetails.onRoadPrice) {
+                showAlert("Please enter a valid downpayment (0 to on-road price).");
+                return;
+            }
+            if (isNaN(interestRate) || interestRate * 12 * 100 < 5 || interestRate * 12 * 100 > 20) {
+                showAlert("Interest rate must be between 5% and 20%.");
+                return;
+            }
+            if (isNaN(tenure) || tenure < 12 || tenure > 84) {
+                showAlert("Loan tenure must be between 12 and 84 months.");
+                return;
+            }
+
+            const principal = priceDetails.onRoadPrice - downpayment;
+            const emi = calculateEMI(principal, interestRate, tenure);
+            if (!emi) {
+                showAlert("Unable to calculate EMI. Please check inputs.");
+                return;
+            }
+
+            const totalPayment = emi * tenure;
+            document.getElementById("emi-amount").textContent = `₹${Math.round(emi).toLocaleString('en-IN')}`;
+            document.getElementById("total-payment").textContent = `₹${Math.round(totalPayment).toLocaleString('en-IN')}`;
+            document.getElementById("emi-result").classList.remove("hidden");
+        } catch (e) {
+            console.error("Calculate car EMI failed:", e);
+            showAlert("Failed to calculate EMI.");
+        }
+    }
+
+    function calculateEMI(principal, monthlyInterestRate, tenure) {
+        try {
+            if (principal <= 0 || monthlyInterestRate <= 0 || tenure <= 0) {
+                return null;
+            }
+            const factor = Math.pow(1 + monthlyInterestRate, tenure);
+            const emi = (principal * monthlyInterestRate * factor) / (factor - 1);
+            return isFinite(emi) ? emi : null;
+        } catch (e) {
+            console.error("EMI calculation failed:", e);
+            return null;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        try {
+            console.log("Initializing car details page...");
+            initializeStorage();
+            checkUserLogin();
+            displayCarDetails();
+        } catch (e) {
+            console.error("Car details page initialization failed:", e);
+            showAlert("Failed to initialize car details page.");
+        }
+    });
+</script>
+</body>
+</html>

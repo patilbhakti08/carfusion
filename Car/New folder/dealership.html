@@ -1,0 +1,101 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarFusion - Dealership Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="CarFusion Logo" style="height: 40px;"></a>
+        </div>
+        <div class="user-info">
+            <button id="logout-btn" class="btn btn-danger hidden" onclick="logoutDealer()">Logout</button>
+        </div>
+    </header>
+    <main class="container">
+        <h2>Dealership Login</h2>
+        <form onsubmit="loginDealer(event)">
+            <label for="dealer-id">Dealership ID:</label>
+            <input type="text" id="dealer-id" required aria-label="Dealership ID">
+            <label for="dealer-password">Password:</label>
+            <input type="password" id="dealer-password" required aria-label="Password">
+            <div id="dealer-error" class="error"></div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        <div id="dealer-dashboard" class="hidden">
+            <h2>Manage Dealership</h2>
+            <h3>Add New Car</h3>
+            <form onsubmit="addCar(event)">
+                <label for="car-make">Make:</label>
+                <input type="text" id="car-make" required aria-label="Car Make">
+                <label for="car-model">Model:</label>
+                <input type="text" id="car-model" required aria-label="Car Model">
+                <label for="car-year">Year:</label>
+                <input type="number" id="car-year" required aria-label="Car Year">
+                <label for="car-price">Price (Lakh):</label>
+                <input type="text" id="car-price" required aria-label="Car Price">
+                <label for="car-mileage">Mileage:</label>
+                <input type="text" id="car-mileage" required aria-label="Car Mileage">
+                <label for="car-fuel">Fuel Type:</label>
+                <input type="text" id="car-fuel" required aria-label="Fuel Type">
+                <label for="car-transmission">Transmission:</label>
+                <input type="text" id="car-transmission" required aria-label="Transmission">
+                <label for="car-seating">Seating:</label>
+                <input type="number" id="car-seating" required aria-label="Seating">
+                <label for="car-body">Body Type:</label>
+                <input type="text" id="car-body" required aria-label="Body Type">
+                <div id="car-error" class="error"></div>
+                <button type="submit" class="btn">Add Car</button>
+            </form>
+            <h3>Test Drive Bookings</h3>
+            <div id="bookings"></div>
+        </div>
+    </main>
+    <footer class="footer">
+        <p>© 2025 CarFusion. All rights reserved.</p>
+    </footer>
+</body>
+</html>

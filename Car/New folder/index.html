@@ -1,0 +1,146 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarFusion - Find Your Dream Car</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="script.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <a href="index.html"><img src="./WhatsApp Image 2025-04-28 at 02.14.39_6272ebe6.jpg" alt="CarFusion Logo" style="height: 40px;"></a>
+        </div>
+        <div class="user-info">
+            <button id="login-btn" class="btn btn-secondary" onclick="window.location.href='login.html'">Login/Signup</button>
+            <span id="username" class="username hidden"></span>
+            <button id="logout-btn" class="btn btn-danger hidden" onclick="logoutUser()">Logout</button>
+        </div>
+    </header>
+
+    <!-- Background Image with Search Bar -->
+    <!-- !!! REPLACE THIS IMAGE URL WITH YOUR OWN IMAGE PATH (e.g., 'assets/your-image.jpg') !!! -->
+    <section class="hero-image">
+        <img src="./20240613_162741.jpg" alt="CarFusion Background">
+    </section>
+
+    <!-- Filter Budget Car Section -->
+    <section class="company-filters">
+        <h2>Filter by Car Company</h2>
+        <div class="company-buttons">
+            <button class="btn company-btn" data-make="Maruti Suzuki">
+                <img src="./Swift 2023.webp" alt="Maruti Suzuki">
+                Maruti Suzuki
+            </button>
+            <button class="btn company-btn" data-make="Hyundai">
+                <img src="https://via.placeholder.com/50?text=Hyundai" alt="Hyundai">
+                Hyundai
+            </button>
+            <button class="btn company-btn" data-make="Tata">
+                <img src="https://via.placeholder.com/50?text=Tata" alt="Tata">
+                Tata
+            </button>
+            <button class="btn company-btn" data-make="Mahindra">
+                <img src="https://via.placeholder.com/50?text=Mahindra" alt="Mahindra">
+                Mahindra
+            </button>
+            <button class="btn company-btn" data-make="Honda">
+                <img src="https://via.placeholder.com/50?text=Honda" alt="Honda">
+                Honda
+            </button>
+            <button class="btn company-btn" data-make="Toyota">
+                <img src="https://via.placeholder.com/50?text=Toyota" alt="Toyota">
+                Toyota
+            </button>
+            <button class="btn company-btn" data-make="Kia">
+                <img src="https://via.placeholder.com/50?text=Kia" alt="Kia">
+                Kia
+            </button>
+        </div>
+        <div id="car-listings" class="car-grid"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <a href="about.html">About Us</a>
+                <a href="contact.html">Contact</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="careers.html">Careers</a>
+            </div>
+            <div class="footer-section">
+                <h3>Customer Support</h3>
+                <p>Email: <a href="mailto:support@carfusion.com">support@carfusion.com</a></p>
+                <p>Helpline: +91-123-456-7890</p>
+            </div>
+            <div class="footer-section">
+                <h3>Download App</h3>
+                <a href="#"><img src="https://via.placeholder.com/120x40?text=Play+Store" alt="Google Play Store"></a>
+                <a href="#"><img src="https://via.placeholder.com/120x40?text=App+Store" alt="Apple App Store"></a>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <div class="social-icons">
+                    <a href="#"><img src="https://via.placeholder.com/30?text=FB" alt="Facebook"></a>
+                    <a href="#"><img src="https://via.placeholder.com/30?text=TW" alt="Twitter"></a>
+                    <a href="#"><img src="https://via.placeholder.com/30?text=IG" alt="Instagram"></a>
+                    <a href="#"><img src="https://via.placeholder.com/30?text=YT" alt="YouTube"></a>
+                </div>
+            </div>
+        </div>
+        <p>© 2025 CarFusion. All rights reserved.</p>
+        <div class="login-links">
+            <a href="dealership.html">Dealership Login</a> | 
+            <a href="admin.html">Admin Login</a>
+        </div>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div id="modal-content" class="modal-content"></div>
+    </div>
+</body>
+</html>
